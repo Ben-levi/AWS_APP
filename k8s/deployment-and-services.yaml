@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contacts-deployment
+  labels:
+    app: contacts
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: contacts
+  template:
+    metadata:
+      labels:
+        app: contacts
+    spec:
+      containers:
+      - name: contacts
+        image: ben-levi/contacts:latest
+        ports:
+        - containerPort: 5053
+        env:
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: contacts-config
+              key: APP_ENV
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: contacts-config
+              key: DATABASE_URL
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: contacts-secret
+              key: secret-key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: contacts-internal-service
+spec:
+  selector:
+    app: contacts
+  ports:
+    - protocol: TCP
+      port: 5053
+      targetPort: 5053
+  type: ClusterIP
