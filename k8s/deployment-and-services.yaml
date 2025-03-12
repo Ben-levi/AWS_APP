@@ -1,48 +1,38 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: contacts-deployment
+  name: todo-app-deployment
   labels:
-    app: contacts
+    app: todo-app
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: contacts
+      app: todo-app
   template:
     metadata:
       labels:
-        app: contacts
+        app: todo-app
     spec:
       containers:
-      - name: contacts
+      - name: todo-app
         image: benl89/todo_app:latest
         ports:
         - containerPort: 5053
         env:
-        - name: APP_ENV
+        - name: DB_HOST
           valueFrom:
             configMapKeyRef:
               name: contacts-config
-              key: APP_ENV
-        - name: DATABASE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: contacts-config
-              key: DATABASE_URL
-        - name: SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: contacts-secret
-              key: secret-key
+              key: DB_HOST
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: contacts-internal-service
+  name: todo-app-internal-service
 spec:
   selector:
-    app: contacts
+    app: todo-app
   ports:
     - protocol: TCP
       port: 5053
