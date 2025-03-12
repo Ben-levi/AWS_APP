@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: todo-app
-        image: benl89/todo_app:latest
+        image: benl89/todo_app:latest  # ✅ Corrected image name
         ports:
         - containerPort: 5053
         env:
