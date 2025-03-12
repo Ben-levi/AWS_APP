@@ -6,7 +6,7 @@ pipeline {
         SSH_USER    = 'ubuntu'         // Your SSH user
         SSH_CRED_ID = 'e3057e9e-d907-42db-881f-b8f699c8f692' // Your credential ID
         AWS_REGION  = 'us-east-1'
-        // Replace with your actual ELB DNS or static IP after deployment
+        // Replace this with your actual ELB DNS or static IP after deployment
         APP_ENDPOINT = 'YOUR_ELB_DNS_OR_IP'
     }
 
@@ -27,7 +27,9 @@ pipeline {
                 sshagent([env.SSH_CRED_ID]) {
                     sh """
                         echo "=== SSH Connectivity Check ==="
-                        ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 ${env.SSH_USER}@${env.EC2_HOST} 'echo "SSH connection successful"; uname -a; uptime; df -h; free -m' || echo "SSH connection failed. Check your SSH key and security group settings."
+                        ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 ${env.SSH_USER}@${env.EC2_HOST} \\
+                        'echo "SSH connection successful"; uname -a; uptime; df -h; free -m' \\
+                        || echo "SSH connection failed. Check your SSH key and security group settings."
                     """
                 }
             }
@@ -143,9 +145,32 @@ pipeline {
                             rm -rf AWS_APP
                             git clone https://github.com/Ben-levi/AWS_APP.git
                             cd AWS_APP/k8s
+                            echo "Applying ConfigMap and Secret..."
                             kubectl apply -f configmap-and-secret.yaml
+                            echo "Applying Deployment and Internal Service..."
                             kubectl apply -f deployment-and-services.yaml
+                            echo "Applying ELB Service..."
                             kubectl apply -f service-elb.yaml
+                        '
+                    """
+                }
+            }
+        }
+
+        stage('Check Deployment Status') {
+            steps {
+                sshagent([env.SSH_CRED_ID]) {
+                    sh """
+                        echo "=== Checking Kubernetes Resources on EKS ==="
+                        ssh -o StrictHostKeyChecking=no ${env.SSH_USER}@${env.EC2_HOST} '
+                            echo "Listing all pods:"
+                            kubectl get pods -o wide
+                            echo "Listing services:"
+                            kubectl get svc -o wide
+                            echo "Describing contacts-service (ELB):"
+                            kubectl describe svc contacts-service
+                            echo "Listing events:"
+                            kubectl get events --sort-by=.metadata.creationTimestamp
                         '
                     """
                 }
@@ -154,7 +179,7 @@ pipeline {
 
         stage('Test Application via ELB') {
             steps {
-                // Wait for the ELB service to be provisioned (adjust sleep time as needed)
+                // Wait for the ELB to be provisioned and DNS to propagate
                 sh 'sleep 60'
                 echo "=== Testing Application via ELB ==="
                 sh 'curl -s http://${APP_ENDPOINT}:5053 || echo "Application not reachable via ELB"'
@@ -167,7 +192,7 @@ pipeline {
             echo "==== Pipeline execution completed ===="
         }
         success {
-            echo "✅ Successfully installed eksctl, verified IAM role, created/used existing EKS cluster, and deployed application with ELB"
+            echo "✅ Successfully installed eksctl, verified IAM role, created/used existing EKS cluster, deployed application with ELB, and checked deployment status"
         }
         failure {
             echo "❌ Pipeline failed, see logs for details"
