@@ -2,10 +2,12 @@ pipeline {
     agent any
 
     environment {
-        EC2_HOST = '54.144.194.189' // Your EC2 IP
-        SSH_USER = 'ubuntu'         // Your SSH user
+        EC2_HOST    = '54.144.194.189' // Your EC2 IP
+        SSH_USER    = 'ubuntu'         // Your SSH user
         SSH_CRED_ID = 'e3057e9e-d907-42db-881f-b8f699c8f692' // Your credential ID
-        AWS_REGION = 'us-east-1'
+        AWS_REGION  = 'us-east-1'
+        // Replace with your actual ELB DNS or static IP after deployment
+        APP_ENDPOINT = 'YOUR_ELB_DNS_OR_IP'
     }
 
     stages {
@@ -129,6 +131,35 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy Application to EKS') {
+            steps {
+                sshagent([env.SSH_CRED_ID]) {
+                    sh """
+                        echo "=== Deploying Application to EKS ==="
+                        ssh -o StrictHostKeyChecking=no ${env.SSH_USER}@${env.EC2_HOST} '
+                            cd ~
+                            # Remove any previous clone and clone the repository afresh
+                            rm -rf AWS_APP
+                            git clone https://github.com/Ben-levi/AWS_APP.git
+                            cd AWS_APP/k8s
+                            kubectl apply -f configmap-and-secret.yaml
+                            kubectl apply -f deployment-and-services.yaml
+                            kubectl apply -f service-elb.yaml
+                        '
+                    """
+                }
+            }
+        }
+
+        stage('Test Application via ELB') {
+            steps {
+                // Wait for the ELB service to be provisioned (adjust sleep time as needed)
+                sh 'sleep 60'
+                echo "=== Testing Application via ELB ==="
+                sh 'curl -s http://${APP_ENDPOINT}:5053 || echo "Application not reachable via ELB"'
+            }
+        }
     }
 
     post {
@@ -136,7 +167,7 @@ pipeline {
             echo "==== Pipeline execution completed ===="
         }
         success {
-            echo "✅ Successfully installed eksctl, verified IAM role, and created/used existing EKS cluster"
+            echo "✅ Successfully installed eksctl, verified IAM role, created/used existing EKS cluster, and deployed application with ELB"
         }
         failure {
             echo "❌ Pipeline failed, see logs for details"
