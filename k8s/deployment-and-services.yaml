@@ -23,7 +23,7 @@ spec:
         - name: DB_HOST
           valueFrom:
             configMapKeyRef:
-              name: contacts-config
+              name: todo-config
               key: DB_HOST
 ---
 apiVersion: v1
