@@ -1,4 +1,3 @@
-cat > k8s/DB/phpmyadmin-deployment-svc.yaml << 'EOF'
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -39,4 +38,4 @@ spec:
     - port: 5012
       targetPort: 80
   type: LoadBalancer
-EOF
+
