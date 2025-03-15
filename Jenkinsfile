@@ -191,27 +191,41 @@ pipeline {
                             echo "Applying ConfigMap and Secret..."
                             kubectl apply -f configmap-and-secret.yaml -n ${env.APP_NS}
                             
-                            # Check if deployment exists
-                            if kubectl get deployment -n ${env.APP_NS} | grep -q "todo-app"; then
-                                echo "Application deployment already exists. Updating..."
+                            # Rename ConfigMap and Secret if needed
+                            echo "Renaming ConfigMap and Secret from contacts to todo..."
+                            kubectl get configmap contacts-config -n ${env.APP_NS} -o yaml | sed "s/name: contacts-config/name: todo-config/" | kubectl apply -n ${env.APP_NS} -f -
+                            kubectl get secret contacts-secret -n ${env.APP_NS} -o yaml | sed "s/name: contacts-secret/name: todo-secret/" | kubectl apply -n ${env.APP_NS} -f -
+                            
+                            # Check if deployment exists and get its name
+                            DEPLOYMENT_NAME=\$(kubectl get deployments -n ${env.APP_NS} | grep todo | awk "{print \\\$1}")
+                            
+                            if [ -n "\$DEPLOYMENT_NAME" ]; then
+                                echo "Application deployment already exists as \$DEPLOYMENT_NAME. Updating..."
                                 kubectl apply -f deployment-and-services.yaml -n ${env.APP_NS}
+                                
+                                # Restart the deployment to pick up the new ConfigMap and Secret
+                                echo "Restarting deployment \$DEPLOYMENT_NAME to apply new configuration..."
+                                kubectl rollout restart deployment/\$DEPLOYMENT_NAME -n ${env.APP_NS}
                             else
                                 echo "Creating new application deployment..."
                                 kubectl apply -f deployment-and-services.yaml -n ${env.APP_NS}
                             fi
                             
-                            # Check if ELB service exists
-                            if kubectl get svc -n ${env.APP_NS} | grep -q "todo-service"; then
-                                echo "ELB service already exists. Updating..."
-                                kubectl apply -f service-elb.yaml -n ${env.APP_NS}
-                            else
-                                echo "Creating new ELB service..."
-                                kubectl apply -f service-elb.yaml -n ${env.APP_NS}
-                            fi
+                            # Get the actual deployment name after applying
+                            DEPLOYMENT_NAME=\$(kubectl get deployments -n ${env.APP_NS} | grep todo | awk "{print \\\$1}")
+                            echo "Deployment name is: \$DEPLOYMENT_NAME"
                             
-                            # Wait for application to be ready
+                            # Apply the ELB service
+                            echo "Applying ELB service..."
+                            kubectl apply -f service-elb.yaml -n ${env.APP_NS}
+                            
+                            # Get the ELB service name
+                            ELB_SVC_NAME=\$(kubectl get svc -n ${env.APP_NS} | grep -E "todo|LoadBalancer" | awk "{print \\\$1}")
+                            echo "ELB service name is: \$ELB_SVC_NAME"
+                            
+                            # Increase the timeout for application to be ready
                             echo "Waiting for application to be ready..."
-                            kubectl wait --for=condition=available deployment -l app=todo-app -n ${env.APP_NS} --timeout=300s
+                            kubectl wait --for=condition=available deployment/\$DEPLOYMENT_NAME -n ${env.APP_NS} --timeout=600s
                         '
                     """
                 }
