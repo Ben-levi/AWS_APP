@@ -1,8 +1,9 @@
+cat > k8s/DB/mysql-deployment-svc.yaml << 'EOF'
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysql
-  namespace: database 
+  namespace: database
   labels:
     app: mysql
 spec:
@@ -20,27 +21,26 @@ spec:
           image: mysql:8.0
           env:
             - name: MYSQL_ROOT_PASSWORD
-              value: "admin"  # Hardcoded password from your data_sql.py
+              value: "admin"
             - name: MYSQL_DATABASE
-              value: "tasks_app"  # Hardcoded database name from your data_sql.py
+              value: "tasks_app"
             - name: MYSQL_USER
-              value: "root"  # Hardcoded user from your data_sql.py
+              value: "root"
           ports:
             - containerPort: 3306
-          resources:
-            requests:
-              memory: "256Mi"
-              cpu: "200m"
-            limits:
-              memory: "512Mi"
-              cpu: "500m"
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mysql-data
+          persistentVolumeClaim:
+            claimName: mysql-pvc
 ---
-# Service definition
 apiVersion: v1
 kind: Service
 metadata:
   name: mysql-service
-  namespace: database 
+  namespace: database
 spec:
   selector:
     app: mysql
@@ -48,3 +48,4 @@ spec:
     - protocol: TCP
       port: 3306
       targetPort: 3306
+EOF
