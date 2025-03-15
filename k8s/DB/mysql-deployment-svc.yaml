@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysql
+  namespace: application
   labels:
     app: mysql
 spec:
@@ -9,7 +10,7 @@ spec:
   selector:
     matchLabels:
       app: mysql
-  template: #pod defintion
+  template:
     metadata:
       labels:
         app: mysql
@@ -19,10 +20,11 @@ spec:
           image: mysql:8.0
           env:
             - name: MYSQL_ROOT_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-db-pass
-                  key: db-password
+              value: "admin"  # Hardcoded password from your data_sql.py
+            - name: MYSQL_DATABASE
+              value: "tasks_app"  # Hardcoded database name from your data_sql.py
+            - name: MYSQL_USER
+              value: "root"  # Hardcoded user from your data_sql.py
           ports:
             - containerPort: 3306
           resources:
@@ -32,25 +34,13 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
-          volumeMounts:
-            - name: mysql-data
-              mountPath: /var/lib/mysql # data directory in the mysql
-            - name: mysql-config  
-              mountPath: /etc/mysql/my.cnf
-              subPath: my.cnf
-      volumes:
-        - name: mysql-data
-          persistentVolumeClaim:
-            claimName: mysql-pvc
-        - name: mysql-config
-          configMap:
-            name: mysql-configmap
 ---
-# service definition
+# Service definition
 apiVersion: v1
 kind: Service
 metadata:
   name: mysql-service
+  namespace: application
 spec:
   selector:
     app: mysql
@@ -58,4 +48,3 @@ spec:
     - protocol: TCP
       port: 3306
       targetPort: 3306
-  
