@@ -162,6 +162,7 @@ pipeline {
                                 kubectl apply -f AWS_APP/k8s/DB/mysql-deployment-svc.yaml -n ${env.MYSQL_NS}
                                 kubectl apply -f AWS_APP/k8s/DB/mysql-pvc.yaml -n ${env.MYSQL_NS}
                                 kubectl apply -f AWS_APP/k8s/DB/phpmyadmin-deployment-svc.yaml -n ${env.MYSQL_NS}
+                                kubectl apply -f AWS_APP/k8s/DB/MySQL_ConfigMap -n ${env.MYSQL_NS}
                                 
                                 # Wait for MySQL to be ready
                                 echo "Waiting for MySQL to be ready..."
