@@ -1,38 +1,42 @@
+cat > k8s/DB/phpmyadmin-deployment-svc.yaml << 'EOF'
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: phpmyadmin
-  labels:
-    app: phpmyadmin
+  namespace: database
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: phpmyadmin
-  template: #pod defintion
+  template:
     metadata:
       labels:
         app: phpmyadmin
-    spec: # container specs
+    spec:
       containers:
         - name: phpmyadmin
-          image: phpmyadmin
+          image: phpmyadmin/phpmyadmin:latest
           ports:
             - containerPort: 80
           env:
-          - name: PMA_HOST 
-            value: mysql-service
-
+            - name: PMA_HOST
+              value: mysql-service
+            - name: PMA_PORT
+              value: "3306"
+            - name: MYSQL_ROOT_PASSWORD
+              value: "admin"
 ---
 apiVersion: v1
 kind: Service
 metadata:
- name: phpmyadmin-service
+  name: phpmyadmin-service
+  namespace: database
 spec:
- selector:
-   app: phpmyadmin
- type: LoadBalancer # external service which can be accessed from outside the cluster
- ports:
-   - protocol: TCP
-     port: 5012
-     targetPort: 80   
+  selector:
+    app: phpmyadmin
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP
+EOF
