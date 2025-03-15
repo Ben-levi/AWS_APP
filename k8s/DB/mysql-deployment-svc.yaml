@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysql
-  namespace: application
+  namespace: database 
   labels:
     app: mysql
 spec:
@@ -40,7 +40,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mysql-service
-  namespace: application
+  namespace: database 
 spec:
   selector:
     app: mysql
