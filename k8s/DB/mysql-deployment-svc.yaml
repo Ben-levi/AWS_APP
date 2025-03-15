@@ -23,8 +23,6 @@ spec:
               value: "admin"
             - name: MYSQL_DATABASE
               value: "tasks_app"
-            - name: MYSQL_USER
-              value: "root"
           ports:
             - containerPort: 3306
           volumeMounts:
@@ -47,4 +45,3 @@ spec:
     - protocol: TCP
       port: 3306
       targetPort: 3306
-
