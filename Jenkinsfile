@@ -8,6 +8,8 @@ pipeline {
         AWS_REGION  = 'us-east-1'
         // Replace this with your actual ELB DNS or static IP after deployment
         APP_ENDPOINT = 'YOUR_ELB_DNS_OR_IP'
+        MYSQL_NS    = 'database'
+        APP_NS      = 'application'
     }
 
     stages {
@@ -127,7 +129,48 @@ pipeline {
                             echo "Checking Kubernetes nodes..."
                             kubectl get nodes
 
+                            echo "Creating namespaces..."
+                            kubectl create namespace ${env.MYSQL_NS} --dry-run=client -o yaml | kubectl apply -f -
+                            kubectl create namespace ${env.APP_NS} --dry-run=client -o yaml | kubectl apply -f -
+
                             echo "If you see credential errors, ensure the EC2 instance has an appropriate IAM role attached."
+                        '
+                    """
+                }
+            }
+        }
+
+        stage('Install MySQL Database') {
+            steps {
+                sshagent([env.SSH_CRED_ID]) {
+                    sh """
+                        echo "=== Installing MySQL Database ==="
+                        ssh -o StrictHostKeyChecking=no ${env.SSH_USER}@${env.EC2_HOST} '
+                            cd ~
+                            # Clone the repository if not already cloned
+                            if [ ! -d "AWS_APP" ]; then
+                                git clone https://github.com/Ben-levi/AWS_APP.git
+                            else
+                                cd AWS_APP && git pull && cd ~
+                            fi
+
+                            # Check if MySQL deployment exists
+                            if kubectl get deployment -n ${env.MYSQL_NS} | grep -q "mysql"; then
+                                echo "MySQL deployment already exists. Skipping installation."
+                            else
+                                echo "Installing MySQL from the repo..."
+                                kubectl apply -f AWS_APP/DB/deployment.yaml -n ${env.MYSQL_NS}
+                                kubectl apply -f AWS_APP/DB/service.yaml -n ${env.MYSQL_NS}
+                                
+                                # Wait for MySQL to be ready
+                                echo "Waiting for MySQL to be ready..."
+                                kubectl wait --for=condition=available deployment -l app=mysql -n ${env.MYSQL_NS} --timeout=300s
+                            fi
+
+                            # Verify MySQL deployment
+                            echo "Verifying MySQL deployment..."
+                            kubectl get pods -n ${env.MYSQL_NS}
+                            kubectl get svc -n ${env.MYSQL_NS}
                         '
                     """
                 }
@@ -141,16 +184,34 @@ pipeline {
                         echo "=== Deploying Application to EKS ==="
                         ssh -o StrictHostKeyChecking=no ${env.SSH_USER}@${env.EC2_HOST} '
                             cd ~
-                            # Remove any previous clone and clone the repository afresh
-                            rm -rf AWS_APP
-                            git clone https://github.com/Ben-levi/AWS_APP.git
+                            # Repository should be cloned in the previous step
                             cd AWS_APP/k8s
+                            
+                            # Apply ConfigMap and Secret
                             echo "Applying ConfigMap and Secret..."
-                            kubectl apply -f configmap-and-secret.yaml
-                            echo "Applying Deployment and Internal Service..."
-                            kubectl apply -f deployment-and-services.yaml
-                            echo "Applying ELB Service..."
-                            kubectl apply -f service-elb.yaml
+                            kubectl apply -f configmap-and-secret.yaml -n ${env.APP_NS}
+                            
+                            # Check if deployment exists
+                            if kubectl get deployment -n ${env.APP_NS} | grep -q "contacts-app"; then
+                                echo "Application deployment already exists. Updating..."
+                                kubectl apply -f deployment-and-services.yaml -n ${env.APP_NS}
+                            else
+                                echo "Creating new application deployment..."
+                                kubectl apply -f deployment-and-services.yaml -n ${env.APP_NS}
+                            fi
+                            
+                            # Check if ELB service exists
+                            if kubectl get svc -n ${env.APP_NS} | grep -q "contacts-service"; then
+                                echo "ELB service already exists. Updating..."
+                                kubectl apply -f service-elb.yaml -n ${env.APP_NS}
+                            else
+                                echo "Creating new ELB service..."
+                                kubectl apply -f service-elb.yaml -n ${env.APP_NS}
+                            fi
+                            
+                            # Wait for application to be ready
+                            echo "Waiting for application to be ready..."
+                            kubectl wait --for=condition=available deployment -l app=contacts-app -n ${env.APP_NS} --timeout=300s
                         '
                     """
                 }
@@ -163,16 +224,56 @@ pipeline {
                     sh """
                         echo "=== Checking Kubernetes Resources on EKS ==="
                         ssh -o StrictHostKeyChecking=no ${env.SSH_USER}@${env.EC2_HOST} '
-                            echo "Listing all pods:"
-                            kubectl get pods -o wide
-                            echo "Listing services:"
-                            kubectl get svc -o wide
+                            echo "Listing all pods in application namespace:"
+                            kubectl get pods -n ${env.APP_NS} -o wide
+                            
+                            echo "Listing all pods in database namespace:"
+                            kubectl get pods -n ${env.MYSQL_NS} -o wide
+                            
+                            echo "Listing services in application namespace:"
+                            kubectl get svc -n ${env.APP_NS} -o wide
+                            
+                            echo "Listing services in database namespace:"
+                            kubectl get svc -n ${env.MYSQL_NS} -o wide
+                            
                             echo "Describing contacts-service (ELB):"
-                            kubectl describe svc contacts-service
+                            kubectl describe svc contacts-service -n ${env.APP_NS}
+                            
+                            echo "Checking MySQL connectivity from application:"
+                            kubectl exec -it \$(kubectl get pods -n ${env.APP_NS} -l app=contacts-app -o jsonpath="{.items[0].metadata.name}") -n ${env.APP_NS} -- bash -c "nc -vz mysql.${env.MYSQL_NS}.svc.cluster.local 3306" || echo "MySQL connectivity check failed"
+                            
+                            echo "Retrieving ELB endpoint:"
+                            ELB_ENDPOINT=\$(kubectl get svc contacts-service -n ${env.APP_NS} -o jsonpath="{.status.loadBalancer.ingress[0].hostname}")
+                            echo "ELB Endpoint: \$ELB_ENDPOINT"
+                            
                             echo "Listing events:"
-                            kubectl get events --sort-by=.metadata.creationTimestamp
+                            kubectl get events -n ${env.APP_NS} --sort-by=.metadata.creationTimestamp
                         '
                     """
+                }
+            }
+        }
+
+        stage('Get ELB Endpoint') {
+            steps {
+                sshagent([env.SSH_CRED_ID]) {
+                    script {
+                        def elbEndpoint = sh(
+                            script: """
+                                ssh -o StrictHostKeyChecking=no ${env.SSH_USER}@${env.EC2_HOST} '
+                                    kubectl get svc contacts-service -n ${env.APP_NS} -o jsonpath="{.status.loadBalancer.ingress[0].hostname}"
+                                '
+                            """,
+                            returnStdout: true
+                        ).trim()
+                        
+                        if (elbEndpoint) {
+                            env.APP_ENDPOINT = elbEndpoint
+                            echo "ELB Endpoint detected: ${env.APP_ENDPOINT}"
+                        } else {
+                            echo "ELB Endpoint not available yet"
+                        }
+                    }
                 }
             }
         }
@@ -182,7 +283,13 @@ pipeline {
                 // Wait for the ELB to be provisioned and DNS to propagate
                 sh 'sleep 60'
                 echo "=== Testing Application via ELB ==="
-                sh 'curl -s http://${APP_ENDPOINT}:5053 || echo "Application not reachable via ELB"'
+                sh """
+                    if [ -z "${env.APP_ENDPOINT}" ] || [ "${env.APP_ENDPOINT}" = "YOUR_ELB_DNS_OR_IP" ]; then
+                        echo "ELB endpoint not available or not set correctly"
+                    else
+                        curl -s http://${env.APP_ENDPOINT}:5053 || echo "Application not reachable via ELB"
+                    fi
+                """
             }
         }
     }
@@ -192,7 +299,7 @@ pipeline {
             echo "==== Pipeline execution completed ===="
         }
         success {
-            echo "✅ Successfully installed eksctl, verified IAM role, created/used existing EKS cluster, deployed application with ELB, and checked deployment status"
+            echo "✅ Successfully installed eksctl, verified IAM role, created/used existing EKS cluster, deployed MySQL, deployed application with ELB, and checked deployment status"
         }
         failure {
             echo "❌ Pipeline failed, see logs for details"
