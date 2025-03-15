@@ -192,7 +192,7 @@ pipeline {
                             kubectl apply -f configmap-and-secret.yaml -n ${env.APP_NS}
                             
                             # Check if deployment exists
-                            if kubectl get deployment -n ${env.APP_NS} | grep -q "contacts-app"; then
+                            if kubectl get deployment -n ${env.APP_NS} | grep -q "todo-app"; then
                                 echo "Application deployment already exists. Updating..."
                                 kubectl apply -f deployment-and-services.yaml -n ${env.APP_NS}
                             else
@@ -201,7 +201,7 @@ pipeline {
                             fi
                             
                             # Check if ELB service exists
-                            if kubectl get svc -n ${env.APP_NS} | grep -q "contacts-service"; then
+                            if kubectl get svc -n ${env.APP_NS} | grep -q "todo-service"; then
                                 echo "ELB service already exists. Updating..."
                                 kubectl apply -f service-elb.yaml -n ${env.APP_NS}
                             else
@@ -211,7 +211,7 @@ pipeline {
                             
                             # Wait for application to be ready
                             echo "Waiting for application to be ready..."
-                            kubectl wait --for=condition=available deployment -l app=contacts-app -n ${env.APP_NS} --timeout=300s
+                            kubectl wait --for=condition=available deployment -l app=todo-app -n ${env.APP_NS} --timeout=300s
                         '
                     """
                 }
@@ -236,14 +236,14 @@ pipeline {
                             echo "Listing services in database namespace:"
                             kubectl get svc -n ${env.MYSQL_NS} -o wide
                             
-                            echo "Describing contacts-service (ELB):"
-                            kubectl describe svc contacts-service -n ${env.APP_NS}
+                            echo "Describing todo-service (ELB):"
+                            kubectl describe svc todo-service -n ${env.APP_NS}
                             
                             echo "Checking MySQL connectivity from application:"
-                            kubectl exec -it \$(kubectl get pods -n ${env.APP_NS} -l app=contacts-app -o jsonpath="{.items[0].metadata.name}") -n ${env.APP_NS} -- bash -c "nc -vz mysql.${env.MYSQL_NS}.svc.cluster.local 3306" || echo "MySQL connectivity check failed"
+                            kubectl exec -it \$(kubectl get pods -n ${env.APP_NS} -l app=todo-app -o jsonpath="{.items[0].metadata.name}") -n ${env.APP_NS} -- bash -c "nc -vz mysql.${env.MYSQL_NS}.svc.cluster.local 3306" || echo "MySQL connectivity check failed"
                             
                             echo "Retrieving ELB endpoint:"
-                            ELB_ENDPOINT=\$(kubectl get svc contacts-service -n ${env.APP_NS} -o jsonpath="{.status.loadBalancer.ingress[0].hostname}")
+                            ELB_ENDPOINT=\$(kubectl get svc todo-service -n ${env.APP_NS} -o jsonpath="{.status.loadBalancer.ingress[0].hostname}")
                             echo "ELB Endpoint: \$ELB_ENDPOINT"
                             
                             echo "Listing events:"
@@ -261,7 +261,7 @@ pipeline {
                         def elbEndpoint = sh(
                             script: """
                                 ssh -o StrictHostKeyChecking=no ${env.SSH_USER}@${env.EC2_HOST} '
-                                    kubectl get svc contacts-service -n ${env.APP_NS} -o jsonpath="{.status.loadBalancer.ingress[0].hostname}"
+                                    kubectl get svc todo-service -n ${env.APP_NS} -o jsonpath="{.status.loadBalancer.ingress[0].hostname}"
                                 '
                             """,
                             returnStdout: true
@@ -299,7 +299,7 @@ pipeline {
             echo "==== Pipeline execution completed ===="
         }
         success {
-            echo "✅ Successfully installed eksctl, verified IAM role, created/used existing EKS cluster, deployed MySQL, deployed application with ELB, and checked deployment status"
+            echo "✅ Successfully installed eksctl, verified IAM role, created/used existing EKS cluster, deployed MySQL, deployed todo application with ELB, and checked deployment status"
         }
         failure {
             echo "❌ Pipeline failed, see logs for details"
