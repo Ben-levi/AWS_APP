@@ -159,8 +159,9 @@ pipeline {
                                 echo "MySQL deployment already exists. Skipping installation."
                             else
                                 echo "Installing MySQL from the repo..."
-                                kubectl apply -f AWS_APP/DB/deployment.yaml -n ${env.MYSQL_NS}
-                                kubectl apply -f AWS_APP/DB/service.yaml -n ${env.MYSQL_NS}
+                                kubectl apply -f k8s/DB/mysql-deployment-svc.yaml -n ${env.MYSQL_NS}
+                                kubectl apply -f k8s/DB/mysql-pvc.yaml -n ${env.MYSQL_NS}
+                                kubectl apply -f k8s/DB/phpmyadmin-deployment-svc.yaml -n ${env.MYSQL_NS}
                                 
                                 # Wait for MySQL to be ready
                                 echo "Waiting for MySQL to be ready..."
