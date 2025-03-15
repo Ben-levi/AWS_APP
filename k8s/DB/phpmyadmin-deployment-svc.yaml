@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phpmyadmin
+  labels:
+    app: phpmyadmin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phpmyadmin
+  template: #pod defintion
+    metadata:
+      labels:
+        app: phpmyadmin
+    spec: # container specs
+      containers:
+        - name: phpmyadmin
+          image: phpmyadmin
+          ports:
+            - containerPort: 80
+          env:
+          - name: PMA_HOST 
+            value: mysql-service
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+ name: phpmyadmin-service
+spec:
+ selector:
+   app: phpmyadmin
+ type: LoadBalancer # external service which can be accessed from outside the cluster
+ ports:
+   - protocol: TCP
+     port: 5012
+     targetPort: 80   
