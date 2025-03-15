@@ -38,4 +38,3 @@ spec:
     - port: 5012
       targetPort: 80
   type: LoadBalancer
-
