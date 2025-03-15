@@ -191,11 +191,7 @@ pipeline {
                             echo "Applying ConfigMap and Secret..."
                             kubectl apply -f configmap-and-secret.yaml -n ${env.APP_NS}
                             
-                            # Rename ConfigMap and Secret if needed
-                            echo "Renaming ConfigMap and Secret from contacts to todo..."
-                            kubectl get configmap contacts-config -n ${env.APP_NS} -o yaml | sed "s/name: contacts-config/name: todo-config/" | kubectl apply -n ${env.APP_NS} -f -
-                            kubectl get secret contacts-secret -n ${env.APP_NS} -o yaml | sed "s/name: contacts-secret/name: todo-secret/" | kubectl apply -n ${env.APP_NS} -f -
-                            
+                                                     
                             # Check if deployment exists and get its name
                             DEPLOYMENT_NAME=\$(kubectl get deployments -n ${env.APP_NS} | grep todo | awk "{print \\\$1}")
                             
