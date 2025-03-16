@@ -237,13 +237,13 @@ EOF
                             
                             # Check MySQL logs
                             echo "=== MySQL Container Logs ==="
-                            MYSQL_POD=$(kubectl get pods -n ${env.MYSQL_NS} -l app=mysql -o jsonpath="{.items[0].metadata.name}" 2>/dev/null) || echo "No MySQL pods found"
-                            if [ -n "$MYSQL_POD" ]; then
-                                kubectl logs $MYSQL_POD -n ${env.MYSQL_NS} --tail=20
+                            MYSQL_POD=\$(kubectl get pods -n ${env.MYSQL_NS} -l app=mysql -o jsonpath="{.items[0].metadata.name}" 2>/dev/null) || echo "No MySQL pods found"
+                            if [ -n "\$MYSQL_POD" ]; then
+                                kubectl logs \$MYSQL_POD -n ${env.MYSQL_NS} --tail=20
                                 
                                 # Test MySQL connectivity from within the pod
                                 echo "=== Testing MySQL connectivity from within pod ==="
-                                kubectl exec -it $MYSQL_POD -n ${env.MYSQL_NS} -- mysql -u root -ppassword -e "SHOW DATABASES;" || echo "Failed to connect to MySQL"
+                                kubectl exec -it \$MYSQL_POD -n ${env.MYSQL_NS} -- mysql -u root -ppassword -e "SHOW DATABASES;" || echo "Failed to connect to MySQL"
                             fi
                             
                             echo "=== MySQL Services ==="
@@ -342,26 +342,26 @@ EOF
                             
                             # Check application to MySQL connectivity
                             echo "=== Testing MySQL Connectivity from Application ==="
-                            APP_POD=$(kubectl get pods -n ${env.APP_NS} -l app=todo-app -o jsonpath="{.items[0].metadata.name}" 2>/dev/null)
-                            if [ -n "$APP_POD" ]; then
-                                echo "Testing network connectivity from $APP_POD to MySQL service:"
-                                kubectl exec -it $APP_POD -n ${env.APP_NS} -- bash -c "nc -zvw3 mysql.${env.MYSQL_NS}.svc.cluster.local 3306" || echo "MySQL connectivity check failed"
+                            APP_POD=\$(kubectl get pods -n ${env.APP_NS} -l app=todo-app -o jsonpath="{.items[0].metadata.name}" 2>/dev/null)
+                            if [ -n "\$APP_POD" ]; then
+                                echo "Testing network connectivity from \$APP_POD to MySQL service:"
+                                kubectl exec -it \$APP_POD -n ${env.APP_NS} -- bash -c "nc -zvw3 mysql.${env.MYSQL_NS}.svc.cluster.local 3306" || echo "MySQL connectivity check failed"
                                 
                                 # Test DNS resolution
                                 echo "Testing DNS resolution for MySQL service:"
-                                kubectl exec -it $APP_POD -n ${env.APP_NS} -- bash -c "nslookup mysql.${env.MYSQL_NS}.svc.cluster.local" || echo "DNS resolution failed"
+                                kubectl exec -it \$APP_POD -n ${env.APP_NS} -- bash -c "nslookup mysql.${env.MYSQL_NS}.svc.cluster.local" || echo "DNS resolution failed"
                                 
-                                # Check environment variables in app pod
+                                # Check environment variables in application pod:"
                                 echo "Checking environment variables in application pod:"
-                                kubectl exec -it $APP_POD -n ${env.APP_NS} -- bash -c "env | grep -i -E \'mysql|db|database\'" || echo "No MySQL environment variables found"
+                                kubectl exec -it \$APP_POD -n ${env.APP_NS} -- bash -c "env | grep -i -E \'mysql|db|database\'" || echo "No MySQL environment variables found"
                             fi
                             
                             echo "Describing todo-service (ELB):"
                             kubectl describe svc todo-service -n ${env.APP_NS}
                             
                             echo "Retrieving ELB endpoint:"
-                            ELB_ENDPOINT=$(kubectl get svc todo-service -n ${env.APP_NS} -o jsonpath="{.status.loadBalancer.ingress[0].hostname}")
-                            echo "ELB Endpoint: $ELB_ENDPOINT"
+                            ELB_ENDPOINT=\$(kubectl get svc todo-service -n ${env.APP_NS} -o jsonpath="{.status.loadBalancer.ingress[0].hostname}")
+                            echo "ELB Endpoint: \$ELB_ENDPOINT"
                             
                             echo "=== Recent Events ==="
                             kubectl get events -n ${env.APP_NS} --sort-by=.metadata.creationTimestamp | tail -n 20
@@ -379,28 +379,28 @@ EOF
                         echo "=== Testing MySQL Database Schema ==="
                         ssh -o StrictHostKeyChecking=no ${env.SSH_USER}@${env.EC2_HOST} '
                             # Find MySQL pod
-                            MYSQL_POD=$(kubectl get pods -n ${env.MYSQL_NS} -l app=mysql -o jsonpath="{.items[0].metadata.name}" 2>/dev/null)
+                            MYSQL_POD=\$(kubectl get pods -n ${env.MYSQL_NS} -l app=mysql -o jsonpath="{.items[0].metadata.name}" 2>/dev/null)
                             
-                            if [ -n "$MYSQL_POD" ]; then
+                            if [ -n "\$MYSQL_POD" ]; then
                                 echo "Checking MySQL databases and tables:"
-                                kubectl exec -it $MYSQL_POD -n ${env.MYSQL_NS} -- mysql -u root -ppassword -e "SHOW DATABASES;"
-                                kubectl exec -it $MYSQL_POD -n ${env.MYSQL_NS} -- mysql -u root -ppassword -e "USE todos; SHOW TABLES;" || echo "Todo database not found or tables not created"
+                                kubectl exec -it \$MYSQL_POD -n ${env.MYSQL_NS} -- mysql -u root -ppassword -e "SHOW DATABASES;"
+                                kubectl exec -it \$MYSQL_POD -n ${env.MYSQL_NS} -- mysql -u root -ppassword -e "USE todos; SHOW TABLES;" || echo "Todo database not found or tables not created"
                                 
                                 # Check if the todos database exists, if not create it
                                 echo "Ensuring todos database exists:"
-                                kubectl exec -it $MYSQL_POD -n ${env.MYSQL_NS} -- mysql -u root -ppassword -e "CREATE DATABASE IF NOT EXISTS todos;"
+                                kubectl exec -it \$MYSQL_POD -n ${env.MYSQL_NS} -- mysql -u root -ppassword -e "CREATE DATABASE IF NOT EXISTS todos;"
                                 
                                 # Check if tasks table exists, if not create it
                                 echo "Ensuring tasks table exists:"
-                                kubectl exec -it $MYSQL_POD -n ${env.MYSQL_NS} -- mysql -u root -ppassword -e "USE todos; CREATE TABLE IF NOT EXISTS tasks (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255) NOT NULL, description TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
+                                kubectl exec -it \$MYSQL_POD -n ${env.MYSQL_NS} -- mysql -u root -ppassword -e "USE todos; CREATE TABLE IF NOT EXISTS tasks (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255) NOT NULL, description TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
                                 
                                 # Insert test data
                                 echo "Inserting test data:"
-                                kubectl exec -it $MYSQL_POD -n ${env.MYSQL_NS} -- mysql -u root -ppassword -e "USE todos; INSERT INTO tasks (title, description) VALUES ('Test Task', 'This is a test task');"
+                                kubectl exec -it \$MYSQL_POD -n ${env.MYSQL_NS} -- mysql -u root -ppassword -e "USE todos; INSERT INTO tasks (title, description) VALUES (\'Test Task\', \'This is a test task\');"
                                 
                                 # Check data
                                 echo "Checking inserted data:"
-                                kubectl exec -it $MYSQL_POD -n ${env.MYSQL_NS} -- mysql -u root -ppassword -e "USE todos; SELECT * FROM tasks;"
+                                kubectl exec -it \$MYSQL_POD -n ${env.MYSQL_NS} -- mysql -u root -ppassword -e "USE todos; SELECT * FROM tasks;"
                             else
                                 echo "MySQL pod not found"
                             fi
