@@ -10,13 +10,11 @@ pipeline {
         APP_ENDPOINT = 'YOUR_ELB_DNS_OR_IP'
         MYSQL_NS    = 'database'
         APP_NS      = 'application'
-        // Add timeout settings
-        TIMEOUT_MINUTES = 5
     }
 
     options {
-        // Add timeout for the entire pipeline
-        timeout(time: env.TIMEOUT_MINUTES, unit: 'MINUTES')
+        // Add timeout for the entire pipeline - use direct value instead of env variable
+        timeout(time: 5, unit: 'MINUTES')
     }
 
     stages {
@@ -90,7 +88,7 @@ pipeline {
 
         stage('Create EKS Cluster') {
             options {
-                timeout(time: env.TIMEOUT_MINUTES, unit: 'MINUTES')
+                timeout(time: 5, unit: 'MINUTES')
             }
             steps {
                 sshagent([env.SSH_CRED_ID]) {
@@ -158,7 +156,7 @@ pipeline {
 
         stage('Install MySQL Database') {
             options {
-                timeout(time: env.TIMEOUT_MINUTES, unit: 'MINUTES')
+                timeout(time: 5, unit: 'MINUTES')
             }
             steps {
                 sshagent([env.SSH_CRED_ID]) {
@@ -256,7 +254,7 @@ EOF
 
         stage('Deploy Application to EKS') {
             options {
-                timeout(time: env.TIMEOUT_MINUTES, unit: 'MINUTES')
+                timeout(time: 5, unit: 'MINUTES')
             }
             steps {
                 sshagent([env.SSH_CRED_ID]) {
