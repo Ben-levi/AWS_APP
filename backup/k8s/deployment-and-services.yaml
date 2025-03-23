@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-app-deployment
+  labels:
+    app: todo-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: todo-app
+  template:
+    metadata:
+      labels:
+        app: todo-app
+    spec:
+      containers:
+      - name: todo-app
+        image: benl89/todo_app:latest  # ✅ Corrected image name
+        ports:
+        - containerPort: 5053
+        env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: todo-config
+              key: DB_HOST
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-app-internal-service
+spec:
+  selector:
+    app: todo-app
+  ports:
+    - protocol: TCP
+      port: 5053
+      targetPort: 5053
+  type: ClusterIP

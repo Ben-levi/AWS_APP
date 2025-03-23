@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Task</title>
+    <link rel="stylesheet" href="/static/styles/style.css">
+    <style>
+        form {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        form div {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        input[type="submit"] {
+            background-color: #4299e1;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        input[type="submit"]:hover {
+            background-color: #3182ce;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="/welcome">Home</a>
+        </div>
+        <div class="navbar-right">
+            <a href="/addtask">New Task</a>
+            <a href="/viewtasks">View Tasks</a>
+        </div>
+    </nav>
+    
+    <h1 class="h1-center">Add New Task</h1>
+    <form action="/createtask" method="post" enctype="multipart/form-data">
+        <div>
+            <label for="title">Enter your Task:</label>
+            <input type="text" name="title" id="title" required>
+        </div>
+        <div>
+            <label for="priority">Priority:</label>
+            <select name="priority" id="priority">
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
+        </div>
+        <div>
+            <label for="status">Status:</label>
+            <select name="status" id="status">
+                <option value="New">New</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+            </select>
+        </div>
+        <div>
+            <label for="person">Assigned To:</label>
+            <select name="person" id="person">
+                <option value="Dad">Dad</option>
+                <option value="Mom">Mom</option>
+                <option value="Son">Son</option>
+                <option value="Daughter">Daughter</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+        <div>
+            <label for="description">Description:</label>
+            <textarea name="description" id="description" rows="4"></textarea>
+        </div>
+        <div>
+            <label for="photo">Upload Image:</label>
+            <input type="file" name="photo" id="photo" accept="image/*">
+        </div>
+        <div>
+            <input type="submit" value="Add Task">
+        </div>
+    </form>
+</body>
+</html>

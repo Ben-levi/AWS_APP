@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-py
+  namespace: application
+data:
+  app.py: |
+$(cat ~/app_updates/app.py | sed 's/^/    /')
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: data-sql-py
+  namespace: application
+data:
+  data_sql.py: |
+$(cat ~/app_updates/data_sql.py | sed 's/^/    /')
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: addtask-template
+  namespace: application
+data:
+  addtasksForm.html: |
+$(cat ~/app_updates/templates/addtasksForm.html | sed 's/^/    /')
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edittask-template
+  namespace: application
+data:
+  edittaskForm.html: |
+$(cat ~/app_updates/templates/edittaskForm.html | sed 's/^/    /')
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tasktable-template
+  namespace: application
+data:
+  tasksTable.html: |
+$(cat ~/app_updates/templates/tasksTable.html | sed 's/^/    /')

@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-app-deployment
+  namespace: application
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: todo-app
+  template:
+    metadata:
+      labels:
+        app: todo-app
+    spec:
+      volumes:
+        - name: app-py-volume
+          configMap:
+            name: app-py
+        - name: data-sql-py-volume
+          configMap:
+            name: data-sql-py
+        - name: addtask-template-volume
+          configMap:
+            name: addtask-template
+        - name: edittask-template-volume
+          configMap:
+            name: edittask-template
+        - name: tasktable-template-volume
+          configMap:
+            name: tasktable-template
+        - name: uploads
+          emptyDir: {}
+      containers:
+      - name: todo-app
+        image: benl89/todo_app:latest
+        ports:
+        - containerPort: 5052
+        volumeMounts:
+        - name: app-py-volume
+          mountPath: /app/app.py
+          subPath: app.py
+        - name: data-sql-py-volume
+          mountPath: /app/data_sql.py
+          subPath: data_sql.py
+        - name: addtask-template-volume
+          mountPath: /app/templates/addtasksForm.html
+          subPath: addtasksForm.html
+        - name: edittask-template-volume
+          mountPath: /app/templates/edittaskForm.html
+          subPath: edittaskForm.html
+        - name: tasktable-template-volume
+          mountPath: /app/templates/tasksTable.html
+          subPath: tasksTable.html
+        - name: uploads
+          mountPath: /app/static/uploads
