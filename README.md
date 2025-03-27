@@ -65,7 +65,7 @@ A modern web application to manage family tasks, built with Flask and deployed o
 - **Orchestration**: Kubernetes (AWS EKS)
 - **CI/CD**: Jenkins
 - **Monitoring**: Grafana, Prometheus
-- **Infrastructure**: AWS (EKS, ELB)
+- **Infrastructure**: AWS (EKS, ELB, S3)
 
 ## ☁️ Infrastructure
 
