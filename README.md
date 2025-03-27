@@ -13,7 +13,7 @@ A modern web application to manage family tasks, built with Flask and deployed o
 
 <div align="center">
     <h3>
-        <a href="#">🎬 Watch Demo Video 🎬</a>
+        <a href="[#](https://github.com/Ben-levi/AWS_APP/raw/refs/heads/main/Demo_record.mp4)">🎬 Watch Demo Video 🎬</a>
     </h3>
     <em>Coming soon! Check back for a full demonstration of app features.</em>
 </div>
