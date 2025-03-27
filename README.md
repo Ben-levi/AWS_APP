@@ -34,14 +34,13 @@ A modern web application to manage family tasks, built with Flask and deployed o
 - **Family Assignments**: Assign tasks to specific family members
 - **Priority Levels**: Set importance of tasks with visual indicators
 - **Due Dates**: Schedule tasks with deadline notifications
-- **Categories**: Organize tasks by type (chores, shopping, homework, etc.)
-- **Mobile Responsive**: Works on all devices for on-the-go task management
-
+- **Categories**: Organize tasks by type
+- 
 ## 🏗️ Architecture
 
 ```
 ┌─────────────────┐      ┌─────────────────┐     ┌─────────────────┐
-│   AWS Route 53  │──────▶  AWS ELB/ALB    │────▶│  Kubernetes     │
+│   AWS Services  │──────▶  AWS ELB/ALB    │────▶│  Kubernetes    │
 └─────────────────┘      └─────────────────┘     │  Cluster (EKS)  │
                                                  │                 │
 ┌─────────────────┐                              │  ┌───────────┐  │
@@ -53,27 +52,26 @@ A modern web application to manage family tasks, built with Flask and deployed o
 │    Jenkins      │                                       │
 │    CI/CD        │                                       ▼
 └─────────────────┘                              ┌─────────────────┐
-                                                │   MySQL RDS     │
-                                                └─────────────────┘
+                                                 │    MySQL RDS    │
+                                                 └─────────────────┘
 ```
 
 ## 🛠️ Technology Stack
 
-- **Frontend**: HTML5, CSS3, JavaScript, Bootstrap
+- **Frontend**: HTML5, JavaScript
 - **Backend**: Python, Flask
 - **Database**: MySQL
 - **Containerization**: Docker
 - **Orchestration**: Kubernetes (AWS EKS)
 - **CI/CD**: Jenkins
 - **Monitoring**: Grafana, Prometheus
-- **Infrastructure**: AWS (EKS, RDS, ELB)
+- **Infrastructure**: AWS (EKS, ELB)
 
 ## ☁️ Infrastructure
 
 The application is fully deployed on AWS with:
 
 - **EKS (Elastic Kubernetes Service)**: Managing containerized application
-- **RDS (Relational Database Service)**: Hosting MySQL database
 - **Elastic Load Balancer**: Handling traffic distribution
 - **EC2**: Supporting infrastructure components
 - **IAM**: Managing access control
@@ -110,7 +108,7 @@ Comprehensive monitoring with Grafana dashboards for:
 
 1. **Clone the repository**
    ```
-   git clone https://github.com/yourusername/family-todo-app.git
+   git clone https://github.com/Ben-levi/AWS_APP.git
    cd family-todo-app
    ```
 
@@ -130,15 +128,11 @@ Comprehensive monitoring with Grafana dashboards for:
 
 ## 🔮 Future Enhancements
 
-- **Mobile Application**: Native apps for iOS and Android
-- **API Integrations**: Connect with calendar apps and smart home devices
 - **Analytics Dashboard**: Track family task completion trends
 - **Reward System**: Gamification elements for task completion
 - **Multi-language Support**: Internationalization for global families
 
 ## 📜 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 👥 Contributors
 
