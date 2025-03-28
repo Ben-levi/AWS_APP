@@ -1,4 +1,5 @@
 # 🚀 Family Todo App
+![image](https://github.com/user-attachments/assets/132c6b79-0b1d-4142-8886-93c5bdb2e178)
 
 ## Overview
 A modern web application to manage family tasks, built with Flask and deployed on AWS EKS with a MySQL database and Grafana monitoring.
